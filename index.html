@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>PixiJS Animation Test</title>
+    <link rel="stylesheet" href="/src/styles/main.css">
+    
+    <!-- Полифиллы для IE11 -->
+    <script>
+        if (!window.Promise) {
+            document.write('<script src="https://cdn.jsdelivr.net/npm/promise-polyfill@8/dist/polyfill.min.js"><\/script>');
+        }
+        if (!window.ResizeObserver) {
+            document.write('<script src="https://cdn.jsdelivr.net/npm/resize-observer-polyfill@1.5.1/dist/ResizeObserver.min.js"><\/script>');
+        }
+    </script>
+</head>
+<body>
+    <div id="app"></div>
+    
+    <!-- Основной скрипт -->
+    <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
