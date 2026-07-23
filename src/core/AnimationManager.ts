@@ -28,6 +28,8 @@ export class AnimationManager {
         this.centerAnimation();
         this.setupInteraction();
         
+        console.log('AnimationManager initialized, touch device:', this.isTouchDevice);
+        console.log('Renderer size:', this.app.renderer.width, this.app.renderer.height);
     }
 
     private detectTouchDevice(): boolean {
@@ -67,7 +69,7 @@ export class AnimationManager {
 
         this.pointerDownHandler = (event: PIXI.FederatedPointerEvent) => {
             if (event.pointerType === 'touch') return;
-
+            
             const position = event.global;
             this.moveAnimationTo(position.x, position.y);
         };
@@ -86,6 +88,7 @@ export class AnimationManager {
         
         if (this.isTouchDevice) {
             this.app.stage.on('click', (event) => {
+                console.log('Click at:', event.global.x, event.global.y);
                 const position = event.global;
                 this.moveAnimationTo(position.x, position.y);
             });
@@ -116,6 +119,7 @@ export class AnimationManager {
     }
 
     resize(width: number, height: number): void {
+        console.log('Resize AnimationManager:', width, height);
         this.bounds = this.calculateBounds();
         this.updateHitArea();
         
