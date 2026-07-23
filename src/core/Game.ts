@@ -13,11 +13,26 @@ export class Game {
     private initialized: boolean = false;
     private fullscreenEntered: boolean = false;
     private debugElement: HTMLDivElement | null = null;
+    private canvasWrapper: HTMLDivElement;
 
     constructor(container: HTMLElement) {
         this.container = container;
         this.scaleManager = ScaleManager.getInstance();
         this.isMobile = this.detectMobile();
+        
+        this.canvasWrapper = document.createElement('div');
+        this.canvasWrapper.style.cssText = `
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+        `;
+        this.container.appendChild(this.canvasWrapper);
+        
         this.init();
     }
 
@@ -28,9 +43,7 @@ export class Game {
             this.setupFullscreenHandling();
             this.setupDebugInfo();
             this.initialized = true;
-            console.log('Game initialized successfully');
         } catch (error) {
-            console.error('Failed to initialize game:', error);
             this.showErrorFallback();
         }
     }
@@ -46,8 +59,12 @@ export class Game {
             powerPreference: 'high-performance'
         });
 
-        this.container.appendChild(this.app.view as HTMLCanvasElement);
-        (this.app.view as HTMLCanvasElement).style.display = 'block';
+        const canvas = this.app.view as HTMLCanvasElement;
+        canvas.style.display = 'block';
+        canvas.style.position = 'relative';
+        canvas.style.pointerEvents = 'auto';
+        canvas.style.zIndex = '1';
+        this.canvasWrapper.appendChild(canvas);
 
         this.animationManager = new AnimationManager(this.app);
         
@@ -57,7 +74,8 @@ export class Game {
             }
         });
 
-        this.resizeApp();
+        setTimeout(() => this.resizeApp(), 100);
+        setTimeout(() => this.resizeApp(), 300);
     }
 
     private detectMobile(): boolean {
@@ -74,7 +92,6 @@ export class Game {
             });
             this.resizeObserver.observe(this.container);
         } else {
-            // Fallback для IE11
             window.addEventListener('resize', () => this.resizeApp());
         }
 
@@ -88,7 +105,7 @@ export class Game {
     }
 
     private resizeApp(): void {
-        if (!this.initialized) return;
+        if (!this.initialized || !this.app) return;
 
         const containerRect = this.container.getBoundingClientRect();
         const containerWidth = containerRect.width || window.innerWidth;
@@ -101,16 +118,41 @@ export class Game {
         );
 
         const canvas = this.app.view as HTMLCanvasElement;
-        canvas.style.width = `${width}px`;
-        canvas.style.height = `${height}px`;
-        canvas.style.position = 'absolute';
-        canvas.style.left = `${(containerWidth - width) / 2}px`;
-        canvas.style.top = `${(containerHeight - height) / 2}px`;
+        
+        if (this.isMobile) {
+            this.canvasWrapper.style.width = '100%';
+            this.canvasWrapper.style.height = '100%';
+            this.canvasWrapper.style.transform = 'none';
+            this.canvasWrapper.style.top = '0';
+            this.canvasWrapper.style.left = '0';
+            
+            canvas.style.width = '100vw';
+            canvas.style.height = '100vh';
+            canvas.style.maxWidth = '100vw';
+            canvas.style.maxHeight = '100vh';
+            canvas.style.objectFit = 'contain';
+        } else {
+            this.canvasWrapper.style.width = `${width}px`;
+            this.canvasWrapper.style.height = `${height}px`;
+            this.canvasWrapper.style.transform = 'translate(-50%, -50%)';
+            this.canvasWrapper.style.top = '50%';
+            this.canvasWrapper.style.left = '50%';
+            
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            canvas.style.maxWidth = 'none';
+            canvas.style.maxHeight = 'none';
+            canvas.style.objectFit = 'none';
+        }
 
         this.app.renderer.resize(
             GameConfig.gameWidth,
             GameConfig.gameHeight
         );
+
+        if (this.app.stage) {
+            this.app.stage.hitArea = new PIXI.Rectangle(0, 0, width, height);
+        }
 
         if (this.animationManager) {
             this.animationManager.resize(width, height);
@@ -152,17 +194,18 @@ export class Game {
             this.debugElement = document.createElement('div');
             this.debugElement.style.cssText = `
                 position: fixed;
-                top: 10px;
-                right: 10px;
+                bottom: 10px;
+                left: 10px;
                 color: #fff;
                 background: rgba(0,0,0,0.7);
-                padding: 5px 10px;
+                padding: 8px 12px;
                 border-radius: 5px;
                 font-family: monospace;
-                font-size: 12px;
+                font-size: 11px;
                 z-index: 9999;
                 pointer-events: none;
-                opacity: 0.5;
+                opacity: 0.7;
+                line-height: 1.4;
             `;
             document.body.appendChild(this.debugElement);
             
@@ -174,7 +217,12 @@ export class Game {
                 const now = Date.now();
                 if (now - lastTime >= 1000) {
                     if (this.debugElement) {
-                        this.debugElement.textContent = `FPS: ${frames}`;
+                        const size = this.scaleManager.getCurrentSize();
+                        this.debugElement.textContent = 
+                            `FPS: ${frames}\n` +
+                            `Size: ${Math.round(size.width)}x${Math.round(size.height)}\n` +
+                            `Mode: ${this.isMobile ? 'Mobile' : 'Desktop'}\n` +
+                            `Container: ${Math.round(window.innerWidth)}x${Math.round(window.innerHeight)}`;
                     }
                     frames = 0;
                     lastTime = now;

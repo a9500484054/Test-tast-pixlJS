@@ -83,29 +83,71 @@ export class ScaleManager {
         containerHeight: number,
         isMobile: boolean = false
     ): { width: number; height: number; scale: number } {
-        let maxWidth = containerWidth;
-        let maxHeight = containerHeight;
-        
-        if (!isMobile) {
-            maxWidth = Math.min(containerWidth, GameConfig.maxDesktopWidth);
-            maxHeight = Math.min(containerHeight, GameConfig.maxDesktopHeight);
-        } else {
-            maxWidth = Math.min(containerWidth, GameConfig.mobileMaxWidth);
-            maxHeight = Math.min(containerHeight, GameConfig.mobileMaxHeight);
-        }
+        const gameWidth = GameConfig.gameWidth;
+        const gameHeight = GameConfig.gameHeight;
+        const aspectRatio = gameWidth / gameHeight;
 
-        const scaleX = maxWidth / GameConfig.gameWidth;
-        const scaleY = maxHeight / GameConfig.gameHeight;
-        const scale = Math.min(scaleX, scaleY);
-        
-        const width = GameConfig.gameWidth * scale;
-        const height = GameConfig.gameHeight * scale;
-        
-        this.currentWidth = width;
-        this.currentHeight = height;
-        this.scaleFactor = scale;
-        
-        return { width, height, scale };
+        if (!isMobile) {
+            const maxWidth = Math.min(containerWidth, GameConfig.maxDesktopWidth);
+            const maxHeight = Math.min(containerHeight, GameConfig.maxDesktopHeight);
+            
+            let scaleX = maxWidth / gameWidth;
+            let scaleY = maxHeight / gameHeight;
+            let scale = Math.min(scaleX, scaleY);
+            
+            scale = Math.max(scale, GameConfig.minScale);
+            
+            const width = gameWidth * scale;
+            const height = gameHeight * scale;
+            
+            this.currentWidth = width;
+            this.currentHeight = height;
+            this.scaleFactor = scale;
+                        
+            return { width, height, scale };
+        } else {
+            let maxWidth = Math.min(containerWidth, GameConfig.mobileMaxWidth);
+            let maxHeight = Math.min(containerHeight, GameConfig.mobileMaxHeight);
+            
+            let scaleX = maxWidth / gameWidth;
+            let scaleY = maxHeight / gameHeight;
+            let scale = Math.min(scaleX, scaleY);
+            
+            scale = Math.max(scale, GameConfig.minScale);
+            
+            let width = gameWidth * scale;
+            let height = gameHeight * scale;
+            
+            if (containerWidth < containerHeight) {
+                width = Math.min(containerWidth, GameConfig.mobileMaxWidth);
+                height = width / aspectRatio;
+                
+                if (height > containerHeight) {
+                    height = Math.min(containerHeight, GameConfig.mobileMaxHeight);
+                    width = height * aspectRatio;
+                }
+            } else {
+                height = Math.min(containerHeight, GameConfig.mobileMaxHeight);
+                width = height * aspectRatio;
+                
+                if (width > containerWidth) {
+                    width = Math.min(containerWidth, GameConfig.mobileMaxWidth);
+                    height = width / aspectRatio;
+                }
+            }
+            
+            scale = Math.min(width / gameWidth, height / gameHeight);
+            scale = Math.max(scale, GameConfig.minScale);
+            
+            width = gameWidth * scale;
+            height = gameHeight * scale;
+            
+            this.currentWidth = width;
+            this.currentHeight = height;
+            this.scaleFactor = scale;
+                        
+            return { width, height, scale };
+        }
     }
 
     getCurrentSize(): { width: number; height: number } {

@@ -10,9 +10,11 @@ export class AnimationManager {
     private bounds: { left: number; right: number; top: number; bottom: number };
     private pointerDownHandler: (event: PIXI.FederatedPointerEvent) => void = () => {};
     private touchStartHandler: (event: PIXI.FederatedPointerEvent) => void = () => {};
+    private isTouchDevice: boolean = false;
 
     constructor(app: PIXI.Application) {
         this.app = app;
+        this.isTouchDevice = this.detectTouchDevice();
         this.container = new PIXI.Container();
         this.app.stage.addChild(this.container);
         
@@ -25,6 +27,11 @@ export class AnimationManager {
         this.bounds = this.calculateBounds();
         this.centerAnimation();
         this.setupInteraction();
+        
+    }
+
+    private detectTouchDevice(): boolean {
+        return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
     }
 
     private calculateBounds(): { left: number; right: number; top: number; bottom: number } {
@@ -54,13 +61,13 @@ export class AnimationManager {
 
     private setupInteraction(): void {
         this.app.stage.interactive = true;
-        this.app.stage.hitArea = new PIXI.Rectangle(
-            0, 0,
-            this.app.renderer.width,
-            this.app.renderer.height
-        );
+        this.app.stage.interactiveChildren = true;
+        
+        this.updateHitArea();
 
         this.pointerDownHandler = (event: PIXI.FederatedPointerEvent) => {
+            if (event.pointerType === 'touch') return;
+
             const position = event.global;
             this.moveAnimationTo(position.x, position.y);
         };
@@ -68,12 +75,29 @@ export class AnimationManager {
         this.app.stage.on('pointerdown', this.pointerDownHandler);
         
         this.touchStartHandler = (event: PIXI.FederatedPointerEvent) => {
+            if (event.pointerType !== 'touch') return;
+            
             event.stopPropagation();
             const position = event.global;
             this.moveAnimationTo(position.x, position.y);
         };
 
         this.app.stage.on('touchstart', this.touchStartHandler);
+        
+        if (this.isTouchDevice) {
+            this.app.stage.on('click', (event) => {
+                const position = event.global;
+                this.moveAnimationTo(position.x, position.y);
+            });
+        }
+    }
+
+    private updateHitArea(): void {
+        const width = this.app.renderer.width;
+        const height = this.app.renderer.height;
+        
+        this.app.stage.hitArea = new PIXI.Rectangle(0, 0, width, height);
+        
     }
 
     private moveAnimationTo(x: number, y: number): void {
@@ -93,10 +117,7 @@ export class AnimationManager {
 
     resize(width: number, height: number): void {
         this.bounds = this.calculateBounds();
-        
-        if (this.app.stage) {
-            this.app.stage.hitArea = new PIXI.Rectangle(0, 0, width, height);
-        }
+        this.updateHitArea();
         
         if (!this.animationEntity.isMoving()) {
             this.centerAnimation();
@@ -107,6 +128,7 @@ export class AnimationManager {
         if (this.app.stage) {
             this.app.stage.off('pointerdown', this.pointerDownHandler);
             this.app.stage.off('touchstart', this.touchStartHandler);
+            this.app.stage.off('click');
         }
         this.container.destroy({ children: true });
     }
