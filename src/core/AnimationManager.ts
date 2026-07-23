@@ -7,15 +7,12 @@ export class AnimationManager {
     private app: PIXI.Application;
     private animationEntity: AnimationEntity;
     private container: PIXI.Container;
-    private isAnimating: boolean = false;
     private bounds: { left: number; right: number; top: number; bottom: number };
-    private pointerDownHandler: (event: PIXI.FederatedPointerEvent) => void;
-    private touchStartHandler: (event: PIXI.FederatedPointerEvent) => void;
-    private isMobile: boolean = false;
+    private pointerDownHandler: (event: PIXI.FederatedPointerEvent) => void = () => {};
+    private touchStartHandler: (event: PIXI.FederatedPointerEvent) => void = () => {};
 
     constructor(app: PIXI.Application) {
         this.app = app;
-        this.isMobile = this.detectMobile();
         this.container = new PIXI.Container();
         this.app.stage.addChild(this.container);
         
@@ -28,13 +25,6 @@ export class AnimationManager {
         this.bounds = this.calculateBounds();
         this.centerAnimation();
         this.setupInteraction();
-    }
-
-    private detectMobile(): boolean {
-        const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-        const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-        const isMobileScreen = window.innerWidth < 768;
-        return isMobileUA || isMobileScreen;
     }
 
     private calculateBounds(): { left: number; right: number; top: number; bottom: number } {

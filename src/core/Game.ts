@@ -4,11 +4,10 @@ import { ScaleManager } from './ScaleManager';
 import { AnimationManager } from './AnimationManager';
 
 export class Game {
-    private app: PIXI.Application;
-    private animationManager: AnimationManager;
+    private app!: PIXI.Application;
+    private animationManager!: AnimationManager;
     private scaleManager: ScaleManager;
     private container: HTMLElement;
-    private isFullscreen: boolean = false;
     private resizeObserver: ResizeObserver | null = null;
     private isMobile: boolean = false;
     private initialized: boolean = false;
@@ -95,7 +94,7 @@ export class Game {
         const containerWidth = containerRect.width || window.innerWidth;
         const containerHeight = containerRect.height || window.innerHeight;
 
-        const { width, height, scale } = this.scaleManager.getOptimalSize(
+        const { width, height } = this.scaleManager.getOptimalSize(
             containerWidth,
             containerHeight,
             this.isMobile
@@ -138,7 +137,6 @@ export class Game {
         }
 
         const fullscreenChangeHandler = () => {
-            this.isFullscreen = this.scaleManager.isInFullscreen();
             setTimeout(() => this.resizeApp(), 100);
         };
 
@@ -149,7 +147,8 @@ export class Game {
     }
 
     private setupDebugInfo(): void {
-        if (!import.meta.env || import.meta.env.DEV) {
+        const isDev = process.env.NODE_ENV === 'development';
+        if (isDev) {
             this.debugElement = document.createElement('div');
             this.debugElement.style.cssText = `
                 position: fixed;

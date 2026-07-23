@@ -72,7 +72,8 @@ window.addEventListener('unhandledrejection', (event) => {
     handleError(event.reason || new Error('Unhandled promise rejection'));
 });
 
-if (import.meta.env && import.meta.env.DEV) {
+const isDev = process.env.NODE_ENV === 'development';
+if (isDev) {
     (window as any).__game = game;
 }
 

@@ -94,16 +94,12 @@ export class ScaleManager {
             maxHeight = Math.min(containerHeight, GameConfig.mobileMaxHeight);
         }
 
-        const aspectRatio = GameConfig.gameWidth / GameConfig.gameHeight;
-        let width = maxWidth;
-        let height = maxHeight;
-        
-        const scaleX = width / GameConfig.gameWidth;
-        const scaleY = height / GameConfig.gameHeight;
+        const scaleX = maxWidth / GameConfig.gameWidth;
+        const scaleY = maxHeight / GameConfig.gameHeight;
         const scale = Math.min(scaleX, scaleY);
         
-        width = GameConfig.gameWidth * scale;
-        height = GameConfig.gameHeight * scale;
+        const width = GameConfig.gameWidth * scale;
+        const height = GameConfig.gameHeight * scale;
         
         this.currentWidth = width;
         this.currentHeight = height;

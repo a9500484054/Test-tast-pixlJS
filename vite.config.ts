@@ -6,7 +6,7 @@ export default defineConfig({
         host: true
     },
     build: {
-        target: ['es2015', 'ie11'],
+        target: 'es2015',
         rollupOptions: {
             output: {
                 assetFileNames: 'assets/[name].[hash].[ext]',
@@ -17,5 +17,14 @@ export default defineConfig({
     },
     resolve: {
         extensions: ['.ts', '.js']
+    },
+    // Отключаем сжатие для совместимости
+    optimizeDeps: {
+        esbuildOptions: {
+            target: 'es2015'
+        }
+    },
+    esbuild: {
+        target: 'es2015'
     }
 });

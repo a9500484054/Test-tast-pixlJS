@@ -1,5 +1,5 @@
 import * as PIXI from 'pixi.js';
-import { AnimationConfig, GameConfig } from '../config/GameConfig';
+import { AnimationConfig } from '../config/GameConfig';
 import { IPoint, IAnimationState, IParticleData } from '../types';
 import { BezierUtils } from '../utils/BezierUtils';
 
@@ -14,8 +14,6 @@ export class AnimationEntity extends PIXI.Container {
     private moveDuration: number = 1200;
     private animationId: number | null = null;
     private shapeSize: number;
-    private currentPulse: number = 1;
-    private lastTime: number = 0;
 
     constructor(size: number, totalFrames: number = 5) {
         super();
@@ -39,7 +37,6 @@ export class AnimationEntity extends PIXI.Container {
         this.setupParticles();
         this.setupAnimation();
         this.setupEventListeners();
-        this.lastTime = Date.now();
     }
 
     private setupEventListeners(): void {
@@ -154,8 +151,6 @@ export class AnimationEntity extends PIXI.Container {
         
         const normalizedDelta = Math.min(delta / 16.67, 3);
         const currentTime = Date.now();
-        const timeDelta = (currentTime - this.lastTime) / 1000;
-        this.lastTime = currentTime;
         
         this.frameCounter += normalizedDelta;
         
@@ -170,7 +165,6 @@ export class AnimationEntity extends PIXI.Container {
         this.rotation += AnimationConfig.rotationSpeed * normalizedDelta * 0.5;
         
         const pulse = 1 + Math.sin(currentTime * AnimationConfig.pulseSpeed) * 0.05;
-        this.currentPulse = pulse;
         this.scale.set(pulse);
         
         if (this.state.isMoving && this.state.targetPosition) {
