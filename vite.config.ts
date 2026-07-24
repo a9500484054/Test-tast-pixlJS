@@ -1,5 +1,8 @@
 import { defineConfig } from 'vite';
 
+// Генерируем уникальный хеш на основе времени
+const buildHash = Date.now().toString(36);
+
 export default defineConfig({
     server: {
         port: 3000,
@@ -12,9 +15,9 @@ export default defineConfig({
         target: 'es2015',
         rollupOptions: {
             output: {
-                assetFileNames: 'assets/[name].[hash].[ext]',
-                chunkFileNames: 'assets/[name].[hash].js',
-                entryFileNames: 'assets/[name].[hash].js'
+                assetFileNames: `assets/[name].${buildHash}.[ext]`,
+                chunkFileNames: `assets/[name].${buildHash}.js`,
+                entryFileNames: `assets/[name].${buildHash}.js`
             }
         },
         minify: 'terser',
