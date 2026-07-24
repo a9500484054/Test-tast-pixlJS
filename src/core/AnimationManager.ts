@@ -1,139 +1,170 @@
-import * as PIXI from 'pixi.js';
-import { AnimationEntity } from '../entities/AnimationEntity';
-import { GameConfig } from '../config/GameConfig';
-import { IPoint } from '../types';
+import * as PIXI from "pixi.js";
+import { GameConfig } from "../config/GameConfig";
+import { AnimationEntity } from "../entities/AnimationEntity";
 
 export class AnimationManager {
-    private app: PIXI.Application;
-    private animationEntity: AnimationEntity;
-    private container: PIXI.Container;
-    private bounds: { left: number; right: number; top: number; bottom: number };
-    private pointerDownHandler: (event: PIXI.FederatedPointerEvent) => void = () => {};
-    private touchStartHandler: (event: PIXI.FederatedPointerEvent) => void = () => {};
-    private isTouchDevice: boolean = false;
+
+    private readonly app: PIXI.Application;
+
+    private readonly container: PIXI.Container;
+
+    private readonly animation: AnimationEntity;
+
+    private bounds = {
+        left: 0,
+        right: 0,
+        top: 0,
+        bottom: 0
+    };
 
     constructor(app: PIXI.Application) {
+
         this.app = app;
-        this.isTouchDevice = this.detectTouchDevice();
+
         this.container = new PIXI.Container();
+
         this.app.stage.addChild(this.container);
-        
-        this.animationEntity = new AnimationEntity(
+
+        this.animation = new AnimationEntity(
             GameConfig.animationSize,
             GameConfig.minFrames
         );
-        this.container.addChild(this.animationEntity);
-        
-        this.bounds = this.calculateBounds();
-        this.centerAnimation();
-        this.setupInteraction();
-        
-        console.log('AnimationManager initialized, touch device:', this.isTouchDevice);
-        console.log('Renderer size:', this.app.renderer.width, this.app.renderer.height);
+
+        this.container.addChild(this.animation);
+
+        this.updateBounds();
+
+        this.center();
+
+        this.initInteraction();
+
     }
 
-    private detectTouchDevice(): boolean {
-        return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    private initInteraction(): void {
+
+        this.app.stage.eventMode = "static";
+
+        this.app.stage.hitArea = this.app.screen;
+
+        this.app.stage.on(
+            "pointerdown",
+            this.onPointerDown,
+            this
+        );
+
     }
 
-    private calculateBounds(): { left: number; right: number; top: number; bottom: number } {
+    private onPointerDown(event: PIXI.FederatedPointerEvent): void {
+
+        const p = event.global;
+
+        this.moveTo(p.x, p.y);
+
+    }
+
+    private updateBounds(): void {
+
         const margin = GameConfig.animationSize / 2;
-        const width = this.app.renderer.width;
-        const height = this.app.renderer.height;
-        
-        return {
-            left: margin,
-            right: width - margin,
-            top: margin,
-            bottom: height - margin
-        };
+
+        this.bounds.left = margin;
+
+        this.bounds.top = margin;
+
+        this.bounds.right =
+            this.app.screen.width - margin;
+
+        this.bounds.bottom =
+            this.app.screen.height - margin;
+
+        this.app.stage.hitArea = this.app.screen;
+
     }
 
-    private centerAnimation(): void {
-        const center = this.getCenter();
-        this.animationEntity.setPosition(center.x, center.y);
+    private clamp(value: number, min: number, max: number): number {
+
+        return Math.max(min, Math.min(max, value));
+
     }
 
-    private getCenter(): IPoint {
-        return {
-            x: this.app.renderer.width / 2,
-            y: this.app.renderer.height / 2
-        };
-    }
+    private moveTo(x: number, y: number): void {
 
-    private setupInteraction(): void {
-        this.app.stage.interactive = true;
-        this.app.stage.interactiveChildren = true;
-        
-        this.updateHitArea();
+        const targetX = this.clamp(
+            x,
+            this.bounds.left,
+            this.bounds.right
+        );
 
-        this.pointerDownHandler = (event: PIXI.FederatedPointerEvent) => {
-            if (event.pointerType === 'touch') return;
-            
-            const position = event.global;
-            this.moveAnimationTo(position.x, position.y);
-        };
+        const targetY = this.clamp(
+            y,
+            this.bounds.top,
+            this.bounds.bottom
+        );
 
-        this.app.stage.on('pointerdown', this.pointerDownHandler);
-        
-        this.touchStartHandler = (event: PIXI.FederatedPointerEvent) => {
-            if (event.pointerType !== 'touch') return;
-            
-            event.stopPropagation();
-            const position = event.global;
-            this.moveAnimationTo(position.x, position.y);
-        };
+        if (this.animation.isMoving()) {
 
-        this.app.stage.on('touchstart', this.touchStartHandler);
-        
-        if (this.isTouchDevice) {
-            this.app.stage.on('click', (event) => {
-                console.log('Click at:', event.global.x, event.global.y);
-                const position = event.global;
-                this.moveAnimationTo(position.x, position.y);
-            });
+            this.animation.interruptMovement();
+
         }
+
+        this.animation.moveTo(
+            {
+                x: targetX,
+                y: targetY
+            },
+            GameConfig.movementDuration
+        );
+
     }
 
-    private updateHitArea(): void {
-        const width = this.app.renderer.width;
-        const height = this.app.renderer.height;
-        
-        this.app.stage.hitArea = new PIXI.Rectangle(0, 0, width, height);
-        
-    }
+    private center(): void {
 
-    private moveAnimationTo(x: number, y: number): void {
-        const targetX = Math.max(this.bounds.left, Math.min(this.bounds.right, x));
-        const targetY = Math.max(this.bounds.top, Math.min(this.bounds.bottom, y));
-        
-        if (this.animationEntity.isMoving()) {
-            this.animationEntity.interruptMovement();
-        }
-        
-        this.animationEntity.moveTo({ x: targetX, y: targetY }, GameConfig.movementDuration);
+        this.animation.setPosition(
+
+            this.app.screen.width / 2,
+
+            this.app.screen.height / 2
+
+        );
+
     }
 
     update(delta: number): void {
-        this.animationEntity.update(delta);
+
+        this.animation.update(delta);
+
     }
 
     resize(width: number, height: number): void {
-        console.log('Resize AnimationManager:', width, height);
-        this.bounds = this.calculateBounds();
-        this.updateHitArea();
-        
-        if (!this.animationEntity.isMoving()) {
-            this.centerAnimation();
+
+        this.app.stage.hitArea = new PIXI.Rectangle(
+            0,
+            0,
+            width,
+            height
+        );
+
+        this.updateBounds();
+
+        if (!this.animation.isMoving()) {
+
+            this.center();
+
         }
+
     }
 
     destroy(): void {
-        if (this.app.stage) {
-            this.app.stage.off('pointerdown', this.pointerDownHandler);
-            this.app.stage.off('touchstart', this.touchStartHandler);
-            this.app.stage.off('click');
-        }
-        this.container.destroy({ children: true });
+
+        this.app.stage.off(
+            "pointerdown",
+            this.onPointerDown,
+            this
+        );
+
+        this.container.destroy({
+            children: true
+        });
+
     }
+
 }
